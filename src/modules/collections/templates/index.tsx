@@ -1,10 +1,7 @@
 "use client"
 
 import usePreviews from "@lib/hooks/use-previews"
-import {
-  getProductCountByBrandByCollectionHandle,
-  getProductsByCollectionHandle,
-} from "@lib/data"
+import { getProductsByCollectionHandle } from "@lib/data"
 import getNumberOfSkeletons from "@lib/util/get-number-of-skeletons"
 import repeat from "@lib/util/repeat"
 import ProductPreview from "@modules/products/components/product-preview"
@@ -14,27 +11,11 @@ import { useCart } from "medusa-react"
 import React, { ReactNode, useEffect, useRef, useState } from "react"
 import { useInView } from "react-intersection-observer"
 import { ProductCollection } from "@medusajs/medusa"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import Filter from "@modules/layout/components/filter"
-import Divider from "@modules/common/components/divider"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@modules/components/ui/accordion"
-import { Checkbox } from "@modules/components/ui/checkbox"
-import {
-  BASE_URL,
-  FILTER_CATEGORIES,
-  GET_CATEGORIES_ITEMS_PER_SLIDE,
-  CATEGORIES_RESPONSIVE,
-  CATEGORIES,
-} from "@lib/constants"
+
+import { GET_CATEGORIES_ITEMS_PER_SLIDE } from "@lib/constants"
 import AliceCarousel from "react-alice-carousel"
-import { notFound, usePathname, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { SizeDetailType, getSizesWithAvailability } from "@lib/util"
-import clsx from "clsx"
 
 const CollectionTemplate: React.FC<{
   collection: ProductCollection

@@ -7,27 +7,34 @@ import RelatedProducts from "@modules/products/components/related-products"
 import ImageGallery from "@modules/products/components/image-gallery"
 import MobileActions from "@modules/products/components/mobile-actions"
 import ProductOnboardingCta from "@modules/products/components/product-onboarding-cta"
-import { PricedProduct } from "@medusajs/medusa/dist/types/pricing"
+import {
+  PricedProduct,
+  PricedVariant,
+} from "@medusajs/medusa/dist/types/pricing"
 import ProductActions from "../components/product-actions"
 import { Heart } from "lucide-react"
 import { Image } from "@medusajs/medusa"
-import { useSearchParams } from "next/navigation"
 
 type ProductTemplateProps = {
   product: PricedProduct
 }
 
-type GroupImagesByColorVariant = {
+type GroupImagesByMetalType = {
   [key: string]: { images: Image[] }
+}
+
+export type MetalOptionType = {
+  [key: string]: { variant_id: string; value: string; image: string }
 }
 
 const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
   const [isOnboarding, setIsOnboarding] = useState<boolean>(false)
   const infoRef = useRef<HTMLDivElement>(null)
   const inView = useIntersection(infoRef, "0px")
-  const [imagesByColorVariant, setImagesByColorVariant] =
-    useState<GroupImagesByColorVariant>({})
-  const params = useSearchParams()
+  const [variantImages, setVariantImages] = useState<GroupImagesByMetalType>({})
+  const [images, setImages] = useState<Image[]>([])
+  const [metalOptions, setMetalOptions] = useState<MetalOptionType>({})
+  const [metalOptionId, setMetalOptionId] = useState<string | undefined>("")
 
   useEffect(() => {
     const onboarding = window.sessionStorage.getItem("onboarding")
@@ -35,46 +42,64 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
   }, [])
 
   useEffect(() => {
-    // Find color options
-    const colorOptions = product?.options?.filter(
-      (option) => option.title.toLowerCase() === "color"
-    )
+    const metalOptionId = product?.options?.find(
+      (option) => option.title.toLowerCase() === "metal"
+    )?.id
+    setMetalOptionId(metalOptionId)
 
-    const imagesByColorVariant: GroupImagesByColorVariant = {}
-    product?.variants.forEach((v) => {
-      if (v.options) {
-        var color = ""
-        v.options.map((option) => {
-          if (option.option_id === colorOptions![0].id) {
-            color = option.value
+    const groupImagesByMetal: GroupImagesByMetalType = {}
+    const metalOptions: MetalOptionType = {}
+    product?.variants?.map((variant) =>
+      variant?.options?.find((option) => {
+        if (option.option_id === metalOptionId) {
+          if (variant?.images && variant?.images.length > 0) {
+            if (!groupImagesByMetal[option.value]) {
+              groupImagesByMetal[option.value] = {
+                images: variant.images!,
+              }
+            }
           }
-        })
-        if (
-          !imagesByColorVariant[color] ||
-          imagesByColorVariant[color].images.length === 0
-        ) {
-          imagesByColorVariant[color] = { images: v.images! }
+          if (variant.thumbnail) {
+            if (!metalOptions[option.value]) {
+              metalOptions[option.value] = {
+                variant_id: option.variant_id,
+                value: option.value,
+                image: variant.thumbnail!,
+              }
+            }
+          }
         }
-      }
-    })
-    setImagesByColorVariant(imagesByColorVariant)
+      })
+    )
+    setVariantImages(groupImagesByMetal)
+    setMetalOptions(metalOptions)
   }, [])
+  // There will be at least one varinat in DB
+  const defaultVariant = product?.variants?.find(
+    (variant) => variant?.metadata?.default === "true"
+  )
+  const selectedVariant: PricedVariant = defaultVariant
+    ? defaultVariant
+    : product?.variants[0]
 
-  // When query params is not present pass the default selected variant
-  const defaultVariant = product?.options?.filter(
-    (option) => option.title.toLowerCase() === "color"
-  )[0].values[0].value
+  const selectedVarinatMetal = selectedVariant?.options?.find(
+    (option) => option.option_id === metalOptionId
+  )?.value
 
-  const variantColor = params.get("color")
-    ? params.get("color")
-    : defaultVariant
+  const onVariantChange = (value: string) => {
+    setImages(variantImages[value]?.images)
+  }
 
   return (
     <ProductProvider product={product}>
       <div className="content-container flex p-0 relative">
         <div className="block min-w-[50%] max-w-[50%] 2xl:min-w-[65%] 2xl:max-w-[65%] relative">
           <ImageGallery
-            images={imagesByColorVariant[variantColor!]?.images || []}
+            images={
+              images.length
+                ? images
+                : variantImages[selectedVarinatMetal!]?.images || []
+            }
           />
         </div>
         <div className="block top-[130px] h-0 sticky min-w-[44px] max-w-[44px] -ml-[44px] mb-[200px]">
@@ -92,7 +117,12 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
           ref={infoRef}
         >
           {isOnboarding && <ProductOnboardingCta />}
-          <ProductActions product={product} variantColor={variantColor!} />
+          <ProductActions
+            product={product}
+            metalOptions={metalOptions}
+            defaultVariant={defaultVariant!}
+            onVariantChange={onVariantChange}
+          />
         </div>
       </div>
       <div className="content-container my-16 px-6 small:px-8 small:my-32">

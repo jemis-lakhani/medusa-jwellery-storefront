@@ -10,66 +10,58 @@ import {
 import { Button } from "@modules/components/ui/button"
 import clsx from "clsx"
 import React, { useEffect, useMemo, useState } from "react"
-import { usePathname } from "next/navigation"
 import { ProductOptionValue } from "@medusajs/medusa"
-import { useCart, useCreateLineItem } from "medusa-react"
-import { CART_KEY, useStore } from "@lib/context/store-context"
+import { MetalOptionType } from "@modules/products/templates"
 
 type ProductActionsProps = {
   product: PricedProduct
-  variantColor: string
-}
-
-type ColorOptionsType = {
-  [key: string]: string
+  metalOptions: MetalOptionType
+  defaultVariant: PricedVariant
+  onVariantChange: (value: string) => void
 }
 
 const ProductActionsInner: React.FC<ProductActionsProps> = ({
   product,
-  variantColor,
+  metalOptions,
+  defaultVariant,
+  onVariantChange,
 }) => {
   const { updateOptions, addToCart, options, inStock, variant } =
     useProductActions()
-
   const price = useProductPrice({ id: product.id!, variantId: variant?.id })
   const selectedPrice = useMemo(() => {
     const { variantPrice, cheapestPrice } = price
-
     return variantPrice || cheapestPrice || null
   }, [price])
-
-  const [colorOptionId, setColorOptionId] = useState<string>("")
+  const [metalOptionId, setMetalOptionId] = useState<string>("")
   const [caratOptionId, setCaratOptionId] = useState<string>("")
-  const [variants, setVariants] = useState<PricedVariant[]>()
+  const [diamondOptionId, setDiamondOptionId] = useState<string>("")
   const [caratOptions, setCaratOptions] =
     useState<(ProductOptionValue | undefined)[]>()
-  const [colorOptions, setColorOptions] = useState<ColorOptionsType>({})
+  const [diamondOptions, setDiamondOptions] =
+    useState<(ProductOptionValue | undefined)[]>()
+
   useEffect(() => {
+    setTimeout(() => {
+      defaultVariant.options?.forEach((option) => {
+        console.log(option.option_id)
+        updateOptions({ [option.option_id]: option.value })
+      })
+    }, 2000)
+
+    const options = product?.options
     const variants = product?.variants
-    setVariants(variants)
 
-    const colorOptionId =
-      product?.options?.filter(
-        (option) => option.title.toLowerCase() === "color"
-      )[0]?.id || ""
-    setColorOptionId(colorOptionId)
-
-    const colorValues = product?.variants
-      .map((variant) =>
-        variant?.options?.find((option) => option.option_id === colorOptionId)
-      )
-      .filter(Boolean)
-    colorValues.map((option) => {
-      colorOptions[option?.variant_id!] = option?.value!
-    })
+    const metalOptionId =
+      options?.filter((option) => option.title.toLowerCase() === "metal")[0]
+        ?.id || ""
+    setMetalOptionId(metalOptionId)
 
     const caratOptionId =
-      product?.options?.filter(
-        (option) => option.title.toLowerCase() === "carat"
-      )[0]?.id || ""
+      options?.filter((option) => option.title.toLowerCase() === "carat")[0]
+        ?.id || ""
     setCaratOptionId(caratOptionId)
-
-    const caratOptions = product?.variants
+    const caratOptions = variants
       .map((variant) =>
         variant?.options?.find((option) => option.option_id === caratOptionId)
       )
@@ -79,24 +71,20 @@ const ProductActionsInner: React.FC<ProductActionsProps> = ({
     ].map((value) => caratOptions.find((option) => option?.value === value))
     setCaratOptions(uniqueCaratOptions)
 
-    setTimeout(() => {
-      updateOptions({
-        [caratOptionId]: uniqueCaratOptions && uniqueCaratOptions[0]?.value!,
-        [colorOptionId]: "14K White Gold",
-      })
-    }, 1000)
+    const diamondOptionId =
+      options?.filter((option) => option.title.toLowerCase() === "diamonds")[0]
+        ?.id || ""
+    setDiamondOptionId(diamondOptionId)
+    const diamondOptions = variants
+      .map((variant) =>
+        variant?.options?.find((option) => option.option_id === diamondOptionId)
+      )
+      .filter(Boolean)
+    const uniqueDiamondOptions = [
+      ...new Set(diamondOptions.map((option) => option?.value)),
+    ].map((value) => diamondOptions.find((option) => option?.value === value))
+    setDiamondOptions(uniqueDiamondOptions)
   }, [])
-
-  const updateCaratOption = (value: string) => {
-    updateOptions({ [caratOptionId]: value })
-  }
-
-  const updateColorOption = (varinatId: string) => {
-    const value = colorOptions && colorOptions[varinatId]
-    if (value) {
-      updateOptions({ [colorOptionId]: value })
-    }
-  }
 
   return (
     <>
@@ -127,40 +115,35 @@ const ProductActionsInner: React.FC<ProductActionsProps> = ({
 
       <div className="flex flex-col gap-6 mt-10">
         <div className="flex gap-x-6">
-          {variants?.length &&
-            variants.map((item, index) => {
-              return (
-                item?.inventory_quantity &&
-                item?.inventory_quantity > 0 && (
-                  <label
-                    key={item?.id}
-                    htmlFor={item?.id}
-                    className="group relative flex items-center justify-center h-12 w-12 shadow-sm cursor-pointer bg-secondary"
-                  >
-                    <span className="p-2 z-[100]">
-                      <img
-                        key={item.title + "" + index}
-                        src={item?.thumbnail!}
-                        className="h-full w-full"
-                      />
-                    </span>
+          {Object.entries(metalOptions).map(([key, item]) => {
+            return (
+              <label
+                key={key}
+                htmlFor={key}
+                className="group relative flex items-center justify-center h-12 w-12 shadow-sm cursor-pointer bg-secondary"
+              >
+                <span className="p-2 z-[100]">
+                  <img key={key} src={item.image} className="h-full w-full" />
+                </span>
 
-                    <input
-                      type="radio"
-                      name="color-options"
-                      id={item?.id}
-                      value="growth"
-                      className="peer absolute h-0 w-0 appearance-none"
-                      onChange={() => updateColorOption(item?.id!)}
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="hidden absolute inset-0 border-[1px] border-black bg-green-200 bg-opacity-10 peer-checked:block peer-checked:bg-white group-hover:block group-hover:bg-white"
-                    ></span>
-                  </label>
-                )
-              )
-            })}
+                <input
+                  type="radio"
+                  name="color-options"
+                  id={key}
+                  className="peer absolute h-0 w-0 appearance-none"
+                  onChange={() => {
+                    updateOptions({ [metalOptionId]: item.value })
+                    onVariantChange(item.value!)
+                  }}
+                  defaultChecked={item?.variant_id === defaultVariant.id}
+                />
+                <span
+                  aria-hidden="true"
+                  className="hidden absolute inset-0 border-[1px] border-black bg-green-200 bg-opacity-10 peer-checked:block peer-checked:bg-white group-hover:block group-hover:bg-white"
+                ></span>
+              </label>
+            )
+          })}
         </div>
 
         <div className="flex gap-x-6">
@@ -177,12 +160,78 @@ const ProductActionsInner: React.FC<ProductActionsProps> = ({
                   </span>
 
                   <input
-                    type="radio"
-                    name="carat-options"
                     id={item?.id}
-                    value="growth"
+                    name="carat-options"
+                    type="radio"
                     className="peer absolute h-0 w-0 appearance-none"
-                    onChange={() => updateCaratOption(item?.value!)}
+                    onChange={() =>
+                      updateOptions({ [caratOptionId]: item?.value! })
+                    }
+                    defaultChecked={item?.variant_id === defaultVariant.id}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="hidden absolute inset-0 border-[1px] border-black bg-opacity-10 peer-checked:block peer-checked:bg-white group-hover:block group-hover:bg-white"
+                  ></span>
+                </label>
+              )
+            })}
+        </div>
+      </div>
+
+      <div className="flex flex-col mt-10">
+        {diamondOptions?.length && (
+          <span className="text-base text-gray-500 mb-2">
+            Select Your Diamond's Characteristics
+          </span>
+        )}
+        <div className="flex flex-col gap-6">
+          {diamondOptions?.length &&
+            diamondOptions.map((item, index) => {
+              const splitArray = item?.value.split("/")
+              const diamondType = splitArray![0]
+              const diamondDetail = splitArray![splitArray!.length - 1]
+              return (
+                <label
+                  key={item?.id}
+                  htmlFor={item?.id}
+                  className="group relative flex items-center justify-between h-16 w-full shadow-sm cursor-pointer bg-secondary px-6"
+                >
+                  <div className="flex flex-col">
+                    <div className="text-base z-[100]">{diamondType}</div>
+                    <div className="text-sm z-[100]">{diamondDetail}</div>
+                  </div>
+                  {selectedPrice && (
+                    <>
+                      <div className="flex flex-col text-sm">
+                        <div
+                          className={clsx(
+                            "mr-1 text-gray-500 whitespace-nowrap z-[100]",
+                            {
+                              "line-through":
+                                selectedPrice.price_type === "sale",
+                            }
+                          )}
+                        >
+                          {selectedPrice.original_price}
+                        </div>
+                        {selectedPrice.price_type === "sale" && (
+                          <div className={"mr-1 whitespace-nowrap z-[100]"}>
+                            {selectedPrice.calculated_price}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                  <input
+                    id={item?.id}
+                    name="diamond-options"
+                    type="radio"
+                    className="peer absolute h-0 w-0 appearance-none"
+                    onChange={() =>
+                      updateOptions({ [diamondOptionId]: item?.value! })
+                    }
+                    defaultChecked={item?.variant_id === defaultVariant.id}
                   />
                   <span
                     aria-hidden="true"
@@ -193,7 +242,7 @@ const ProductActionsInner: React.FC<ProductActionsProps> = ({
             })}
         </div>
 
-        <div className="mt-2">
+        <div className="mt-6">
           <div className="flex flex-col gap-6 overflow-hidden">
             {/* Add to cart button */}
             <Button
@@ -217,10 +266,17 @@ const ProductActionsInner: React.FC<ProductActionsProps> = ({
 
 const ProductActions: React.FC<ProductActionsProps> = ({
   product,
-  variantColor,
+  metalOptions,
+  defaultVariant,
+  onVariantChange,
 }) => (
   <ProductProvider product={product}>
-    <ProductActionsInner product={product} variantColor={variantColor} />
+    <ProductActionsInner
+      product={product}
+      metalOptions={metalOptions}
+      defaultVariant={defaultVariant}
+      onVariantChange={onVariantChange}
+    />
   </ProductProvider>
 )
 
@@ -332,3 +388,13 @@ export default ProductActions
                 ))}
             </div> */
 }
+
+// const defaultV = product?.options?.map((option, index) => {
+//   var optionId = ""
+//   const optionValue = product?.variants[index]?.options?.find(
+//     (opt) => opt.option_id === option.id
+//   )?.value
+//   if (optionValue) {
+//     optionId = option.id
+//   }
+// })
