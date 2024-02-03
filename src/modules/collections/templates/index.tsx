@@ -11,8 +11,6 @@ import { useCart } from "medusa-react"
 import React, { ReactNode, useEffect, useRef, useState } from "react"
 import { useInView } from "react-intersection-observer"
 import { ProductCollection } from "@medusajs/medusa"
-
-import { GET_CATEGORIES_ITEMS_PER_SLIDE } from "@lib/constants"
 import AliceCarousel from "react-alice-carousel"
 import { useSearchParams } from "next/navigation"
 import { SizeDetailType, getSizesWithAvailability } from "@lib/util"
@@ -24,12 +22,6 @@ const CollectionTemplate: React.FC<{
   const brand = useSearchParams().get("brand")
   const { cart } = useCart()
   const { ref, inView } = useInView()
-  const [isOpen, setIsOpen] = useState(false)
-  const [items, setItems] = useState<ReactNode[]>([])
-  const [currentIndex, setCurrentIndex] = useState<number>(0)
-  const carouselRef = useRef<AliceCarousel>(null)
-  const [isNextBtnVisisble, setNextButtonVisisble] = useState(true)
-  const [isPrevBtnVisisble, setPrevButtonVisisble] = useState(false)
   const {
     data: infiniteData,
     hasNextPage,
@@ -60,131 +52,15 @@ const CollectionTemplate: React.FC<{
     [key: string]: SizeDetailType[]
   }
 
-  const handleFilterOverlay = (data: string) => {
-    if (data === "FilterOverlay") {
-      setIsOpen(!isOpen)
-    }
-  }
-
-  const handlePrevButtonClick = () => {
-    const itemsPerSlide = GET_CATEGORIES_ITEMS_PER_SLIDE
-    if (carouselRef.current) {
-      if (currentIndex - itemsPerSlide > 0) {
-        carouselRef.current.slideTo(currentIndex - itemsPerSlide)
-        setCurrentIndex(currentIndex - itemsPerSlide)
-        setNextButtonVisisble(true)
-        setPrevButtonVisisble(true)
-      } else if (currentIndex - itemsPerSlide <= 0) {
-        carouselRef.current.slideTo(0)
-        setCurrentIndex(0)
-        setNextButtonVisisble(true)
-        setPrevButtonVisisble(false)
-      }
-    }
-  }
-
-  const handleNextButtonClick = () => {
-    const itemsPerSlide = GET_CATEGORIES_ITEMS_PER_SLIDE
-    const index = currentIndex + itemsPerSlide
-    const totalItems = items.length
-    setCurrentIndex(index)
-    if (carouselRef.current) {
-      if (itemsPerSlide + index < totalItems) {
-        setNextButtonVisisble(true)
-        setPrevButtonVisisble(true)
-      } else if (itemsPerSlide + index > totalItems) {
-        setNextButtonVisisble(false)
-        setPrevButtonVisisble(true)
-      } else if (itemsPerSlide + index === totalItems) {
-        setNextButtonVisisble(false)
-        setPrevButtonVisisble(true)
-      }
-      carouselRef.current.slideTo(
-        index + itemsPerSlide < totalItems
-          ? currentIndex + itemsPerSlide
-          : totalItems - itemsPerSlide
-      )
-    }
-  }
-
-  const handleSlideChanged = (e: { item: number }) => {
-    setCurrentIndex(e.item)
-  }
-
   useEffect(() => {
     if (cart?.region_id) {
       refetch()
     }
   }, [cart?.region_id, refetch])
 
-  useEffect(() => {
-    // if (collectionsList) {
-    //   console.log(collection.metadata)
-    //   var categories: ProductCollection[] = []
-    //   if (collection.metadata.parent) {
-    //     categories = collectionsList.filter(
-    //       (c) => c.metadata.parent === collection.metadata.parent
-    //     )
-    //   } else if (collection.metadata.name) {
-    //     categories = collectionsList.filter(
-    //       (c) => c.metadata.parent === collection.metadata.name
-    //     )
-    //   } else {
-    //     notFound()
-    //   }
-    //   console.log({ categories })
-    //   // if it's parent collection then redirect to first category
-    //   if (!collection.metadata.parent) {
-    //     const category = categories[0]
-    //     if (!category) {
-    //       notFound()
-    //     }
-    //     window.location.href = `${BASE_URL}/collections/${category.handle}`
-    //   }
-    //   const categoryItems = categories.map((item, index) => {
-    //     const title = item.title.toLowerCase()
-    //     return (
-    //       <a
-    //         key={index + "-" + item.title}
-    //         className="rounded-full flex flex-col items-center text-center"
-    //         href={`${BASE_URL}/collections/${item?.handle}`}
-    //       >
-    //         <div
-    //           className={clsx(
-    //             "relative flex items-center justify-center border-[1px]  bg-white text-gray-800 w-20 h-20 rounded-full",
-    //             {
-    //               "border-[#E6E6E6]": item.handle !== collection.handle,
-    //               "border-black": item.handle === collection.handle,
-    //             }
-    //           )}
-    //         >
-    //           <img
-    //             src={`${CATEGORIES[title]?.image}`}
-    //             className="w-11 h-16 rounded-full"
-    //             alt={item?.title}
-    //           ></img>
-    //         </div>
-    //         <div className="text-sm overflow-hidden mt-[15px]">
-    //           {item?.title}
-    //         </div>
-    //       </a>
-    //     )
-    //   })
-    //   setItems(categoryItems)
-    //   if (categoryItems.length <= GET_CATEGORIES_ITEMS_PER_SLIDE) {
-    //     setNextButtonVisisble(false)
-    //     setPrevButtonVisisble(false)
-    //   } else {
-    //     setNextButtonVisisble(true)
-    //     setPrevButtonVisisble(false)
-    //   }
-    // }
-  }, [])
-
   return (
     <>
       <div className="relative bg-secondary">
-        {/* Products Filter  */}
         <div className="content-container p-6">
           <div className="mb-8 text-[38px] font-extrabold text-center uppercase">
             <h1>{collection.title}</h1>
@@ -209,7 +85,6 @@ const CollectionTemplate: React.FC<{
             <span ref={ref}></span>
           </div>
         </div>
-        {/* Products Filter  */}
       </div>
     </>
   )

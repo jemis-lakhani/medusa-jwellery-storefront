@@ -24,7 +24,12 @@ type GroupImagesByMetalType = {
 }
 
 export type MetalOptionType = {
-  [key: string]: { variant_id: string; value: string; image: string }
+  [key: string]: {
+    id: string
+    variant_id: string
+    value: string
+    image: string
+  }
 }
 
 const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
@@ -62,6 +67,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
           if (variant.thumbnail) {
             if (!metalOptions[option.value]) {
               metalOptions[option.value] = {
+                id: option.id,
                 variant_id: option.variant_id,
                 value: option.value,
                 image: variant.thumbnail!,
@@ -74,10 +80,12 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
     setVariantImages(groupImagesByMetal)
     setMetalOptions(metalOptions)
   }, [])
+
   // There will be at least one varinat in DB
   const defaultVariant = product?.variants?.find(
     (variant) => variant?.metadata?.default === "true"
   )
+
   const selectedVariant: PricedVariant = defaultVariant
     ? defaultVariant
     : product?.variants[0]
@@ -120,7 +128,7 @@ const ProductTemplate: React.FC<ProductTemplateProps> = ({ product }) => {
           <ProductActions
             product={product}
             metalOptions={metalOptions}
-            defaultVariant={defaultVariant!}
+            defaultVariant={selectedVariant}
             onVariantChange={onVariantChange}
           />
         </div>
